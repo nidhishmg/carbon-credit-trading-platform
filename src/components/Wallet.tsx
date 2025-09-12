@@ -30,6 +30,9 @@ interface WalletProps {
   onAddFunds: (amount: number, method: string) => void;
   onWithdrawFunds: (amount: number, method: string) => boolean;
   onNavigate: (page: string) => void;
+  onLogout?: () => void;
+  onShowMyListings?: () => void;
+  onShowMyEarnings?: () => void;
 }
 
 export const Wallet: React.FC<WalletProps> = ({ 
@@ -38,7 +41,10 @@ export const Wallet: React.FC<WalletProps> = ({
   transactions, 
   onAddFunds, 
   onWithdrawFunds, 
-  onNavigate 
+  onNavigate,
+  onLogout = () => {},
+  onShowMyListings,
+  onShowMyEarnings
 }) => {
   const [depositAmount, setDepositAmount] = useState('');
   const [depositMethod, setDepositMethod] = useState('');
@@ -112,7 +118,9 @@ export const Wallet: React.FC<WalletProps> = ({
         company={company} 
         currentPage="wallet" 
         onNavigate={onNavigate} 
-        onLogout={() => {}} 
+        onLogout={onLogout}
+        onShowMyListings={onShowMyListings}
+        onShowMyEarnings={onShowMyEarnings}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

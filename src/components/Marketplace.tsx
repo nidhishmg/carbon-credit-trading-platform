@@ -30,6 +30,9 @@ interface MarketplaceProps {
   defaultTab?: 'buy' | 'sell';
   isConnected?: boolean;
   activeUsers?: number;
+  onLogout?: () => void;
+  onShowMyListings?: () => void;
+  onShowMyEarnings?: () => void;
 }
 
 export const Marketplace: React.FC<MarketplaceProps> = ({ 
@@ -40,7 +43,10 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
   onNavigate,
   defaultTab = 'buy',
   isConnected = false,
-  activeUsers = 0
+  activeUsers = 0,
+  onLogout = () => {},
+  onShowMyListings,
+  onShowMyEarnings
 }) => {
   const [sellQuantity, setSellQuantity] = useState('');
   const [sellPrice, setSellPrice] = useState('25.50');
@@ -110,7 +116,9 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
         company={company} 
         currentPage="marketplace" 
         onNavigate={onNavigate} 
-        onLogout={() => {}} 
+        onLogout={onLogout}
+        onShowMyListings={onShowMyListings}
+        onShowMyEarnings={onShowMyEarnings}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

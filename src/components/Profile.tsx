@@ -39,9 +39,20 @@ interface ProfileProps {
   onLogout: () => void;
   isConnected?: boolean;
   activeUsers?: number;
+  onShowMyListings?: () => void;
+  onShowMyEarnings?: () => void;
 }
 
-export const Profile: React.FC<ProfileProps> = ({ company, transactions, onNavigate, onLogout, isConnected = false, activeUsers = 0 }) => {
+export const Profile: React.FC<ProfileProps> = ({ 
+  company, 
+  transactions, 
+  onNavigate, 
+  onLogout, 
+  isConnected = false, 
+  activeUsers = 0, 
+  onShowMyListings, 
+  onShowMyEarnings 
+}) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -88,7 +99,9 @@ export const Profile: React.FC<ProfileProps> = ({ company, transactions, onNavig
         company={company} 
         currentPage="profile" 
         onNavigate={onNavigate} 
-        onLogout={onLogout} 
+        onLogout={onLogout}
+        onShowMyListings={onShowMyListings}
+        onShowMyEarnings={onShowMyEarnings}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

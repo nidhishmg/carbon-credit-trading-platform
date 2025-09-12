@@ -358,66 +358,8 @@ export const companies = {
 
 // Mock marketplace listings
 export const marketplaceListings = [
-  {
-    id: 'ML001',
-    seller: 'JSW Steel',
-    sellerLogo: '🏭',
-    quantity: 5000,
-    price: 25.50,
-    total: 127500,
-    type: 'VCS', // Verified Carbon Standard
-    vintage: '2024',
-    project: 'Renewable Energy - Wind Farm',
-    location: 'Karnataka, India'
-  },
-  {
-    id: 'ML002',
-    seller: 'ACC Cement',
-    sellerLogo: '🏗️',
-    quantity: 3000,
-    price: 26.00,
-    total: 78000,
-    type: 'CDM', // Clean Development Mechanism
-    vintage: '2024',
-    project: 'Energy Efficiency - Industrial',
-    location: 'Tamil Nadu, India'
-  },
-  {
-    id: 'ML003',
-    seller: 'HPCL',
-    sellerLogo: '⛽',
-    quantity: 8000,
-    price: 25.25,
-    total: 202000,
-    type: 'VCS',
-    vintage: '2024',
-    project: 'Methane Capture - Refinery',
-    location: 'Maharashtra, India'
-  },
-  {
-    id: 'ML004',
-    seller: 'External Supplier',
-    sellerLogo: '🌱',
-    quantity: 12000,
-    price: 24.75,
-    total: 297000,
-    type: 'Gold Standard',
-    vintage: '2024',
-    project: 'Reforestation - Afforestation',
-    location: 'Odisha, India'
-  },
-  {
-    id: 'ML005',
-    seller: 'Green Energy Corp',
-    sellerLogo: '🔋',
-    quantity: 7500,
-    price: 26.50,
-    total: 198750,
-    type: 'VCS',
-    vintage: '2024',
-    project: 'Solar Power Generation',
-    location: 'Rajasthan, India'
-  }
+  // Marketplace listings will be populated dynamically by users
+  // No pre-existing demo listings
 ];
 
 // Mock transaction history

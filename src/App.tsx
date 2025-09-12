@@ -4,6 +4,8 @@ import { Profile } from './components/Profile';
 import { Marketplace } from './components/Marketplace';
 import { Transactions } from './components/Transactions';
 import { Wallet } from './components/Wallet';
+import { MyListings } from './components/MyListings';
+import { MyEarnings } from './components/MyEarnings';
 import { companies, generateMockTransactions } from './data/companies';
 import { useRealTimeNetwork } from './hooks/useRealTimeNetwork';
 
@@ -106,6 +108,8 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [walletBalance, setWalletBalance] = useState(2500000); // Initial wallet balance in INR
   const [marketplaceTab, setMarketplaceTab] = useState<'buy' | 'sell'>('buy');
+  const [showMyListings, setShowMyListings] = useState(false);
+  const [showMyEarnings, setShowMyEarnings] = useState(false);
 
   // Real-time network integration
   const {
@@ -335,6 +339,8 @@ export default function App() {
             onLogout={logout}
             isConnected={isConnected}
             activeUsers={activeUsers}
+            onShowMyListings={() => setShowMyListings(true)}
+            onShowMyEarnings={() => setShowMyEarnings(true)}
           />
         );
       case 'marketplace':
@@ -348,6 +354,9 @@ export default function App() {
             defaultTab={marketplaceTab}
             isConnected={isConnected}
             activeUsers={activeUsers}
+            onLogout={logout}
+            onShowMyListings={() => setShowMyListings(true)}
+            onShowMyEarnings={() => setShowMyEarnings(true)}
           />
         );
       case 'transactions':
@@ -356,6 +365,9 @@ export default function App() {
             company={currentCompany}
             transactions={transactions}
             onNavigate={setCurrentPage}
+            onLogout={logout}
+            onShowMyListings={() => setShowMyListings(true)}
+            onShowMyEarnings={() => setShowMyEarnings(true)}
           />
         );
       case 'wallet':
@@ -367,6 +379,9 @@ export default function App() {
             onAddFunds={addFunds}
             onWithdrawFunds={withdrawFunds}
             onNavigate={setCurrentPage}
+            onLogout={logout}
+            onShowMyListings={() => setShowMyListings(true)}
+            onShowMyEarnings={() => setShowMyEarnings(true)}
           />
         );
       default:
@@ -377,6 +392,19 @@ export default function App() {
   return (
     <div className={`min-h-screen ${currentCompany ? `bg-gradient-to-br ${currentCompany.bgGradient}` : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
       {renderPage()}
+      
+      {/* Side Panels */}
+      <MyListings 
+        isOpen={showMyListings}
+        onClose={() => setShowMyListings(false)}
+        company={currentCompany}
+      />
+      
+      <MyEarnings 
+        isOpen={showMyEarnings}
+        onClose={() => setShowMyEarnings(false)}
+        company={currentCompany}
+      />
     </div>
   );
 }

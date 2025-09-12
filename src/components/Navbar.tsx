@@ -20,7 +20,9 @@ import {
   Settings,
   FileText,
   Award,
-  Clock
+  Clock,
+  ShoppingBag,
+  TrendingUp
 } from 'lucide-react';
 import type { Company } from '../App';
 
@@ -29,9 +31,18 @@ interface NavbarProps {
   currentPage: string;
   onNavigate: (page: string) => void;
   onLogout: () => void;
+  onShowMyListings?: () => void;
+  onShowMyEarnings?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ company, currentPage, onNavigate, onLogout }) => {
+export const Navbar: React.FC<NavbarProps> = ({ 
+  company, 
+  currentPage, 
+  onNavigate, 
+  onLogout, 
+  onShowMyListings, 
+  onShowMyEarnings 
+}) => {
   if (!company) return null;
 
   const navItems = [
@@ -135,20 +146,33 @@ export const Navbar: React.FC<NavbarProps> = ({ company, currentPage, onNavigate
                 
                 <DropdownMenuSeparator />
                 
-                <DropdownMenuItem className="flex items-center space-x-2">
-                  <Award className="h-4 w-4" />
-                  <span>BEE Rating: {company.beeData.beeRating}/5 Stars</span>
+                <DropdownMenuItem 
+                  onClick={onShowMyListings}
+                  className="flex items-center space-x-2 cursor-pointer"
+                >
+                  <ShoppingBag className="h-4 w-4" />
+                  <span>My Listings</span>
                 </DropdownMenuItem>
                 
-                <DropdownMenuItem className="flex items-center space-x-2">
-                  <FileText className="h-4 w-4" />
-                  <span>Compliance: {company.beeData.complianceStatus}</span>
+                <DropdownMenuItem 
+                  onClick={onShowMyEarnings}
+                  className="flex items-center space-x-2 cursor-pointer"
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  <span>My Earnings</span>
                 </DropdownMenuItem>
                 
-                <DropdownMenuItem className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4" />
-                  <span>Real-time Monitoring</span>
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuItem 
+                  onClick={onLogout}
+                  className="flex items-center space-x-2 cursor-pointer text-red-600 focus:text-red-600"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
                 </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
                 
                 <DropdownMenuItem className="flex items-center space-x-2">
                   <Settings className="h-4 w-4" />

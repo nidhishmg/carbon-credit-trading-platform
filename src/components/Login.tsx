@@ -31,12 +31,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }, 800);
   };
 
-  const demoCredentials = [
-    { company: 'JSW Steel', beeId: 'BEE-KA-S001', password: 'jsw2025', logo: '🏭' },
-    { company: 'ACC Cement', beeId: 'BEE-KA-C001', password: 'acc2025', logo: '🏗️' },
-    { company: 'HPCL', beeId: 'BEE-KA-R001', password: 'hpcl2025', logo: '⛽' }
-  ];
-
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <div className="w-full max-w-md">
@@ -104,32 +98,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </form>
           </CardContent>
         </Card>
-
-        {/* Demo Credentials */}
-        <div className="mt-6 space-y-3">
-          <p className="text-sm text-gray-300 text-center">Demo Credentials:</p>
-          {demoCredentials.map((cred) => (
-            <div 
-              key={cred.beeId}
-              className="bg-gray-800/60 rounded-lg p-3 border border-gray-700 cursor-pointer hover:bg-gray-700/60 transition-colors"
-              onClick={() => {
-                setBeeId(cred.beeId);
-                setPassword(cred.password);
-              }}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <span className="text-xl">{cred.logo}</span>
-                  <div>
-                    <div className="text-white text-sm">{cred.company}</div>
-                    <div className="text-gray-400 text-xs">{cred.beeId}</div>
-                  </div>
-                </div>
-                <div className="text-xs text-gray-400">Click to use</div>
-              </div>
-            </div>
-          ))}
-        </div>
 
         {/* Footer */}
         <div className="mt-8 text-center">
