@@ -147,7 +147,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <DropdownMenuSeparator />
                 
                 <DropdownMenuItem 
-                  onClick={onShowMyListings}
+                  onClick={() => {
+                    console.log('My Listings clicked - before calling handler');
+                    onShowMyListings?.();
+                    console.log('My Listings clicked - after calling handler');
+                  }}
                   className="flex items-center space-x-2 cursor-pointer"
                 >
                   <ShoppingBag className="h-4 w-4" />
@@ -155,7 +159,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </DropdownMenuItem>
                 
                 <DropdownMenuItem 
-                  onClick={onShowMyEarnings}
+                  onClick={() => {
+                    console.log('My Earnings clicked - before calling handler');
+                    onShowMyEarnings?.();
+                    console.log('My Earnings clicked - after calling handler');
+                  }}
                   className="flex items-center space-x-2 cursor-pointer"
                 >
                   <TrendingUp className="h-4 w-4" />

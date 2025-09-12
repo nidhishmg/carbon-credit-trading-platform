@@ -111,6 +111,17 @@ export default function App() {
   const [showMyListings, setShowMyListings] = useState(false);
   const [showMyEarnings, setShowMyEarnings] = useState(false);
 
+  // Debug functions
+  const handleShowMyListings = () => {
+    console.log('My Listings clicked!');
+    setShowMyListings(true);
+  };
+
+  const handleShowMyEarnings = () => {
+    console.log('My Earnings clicked!');
+    setShowMyEarnings(true);
+  };
+
   // Real-time network integration
   const {
     isConnected,
@@ -339,8 +350,8 @@ export default function App() {
             onLogout={logout}
             isConnected={isConnected}
             activeUsers={activeUsers}
-            onShowMyListings={() => setShowMyListings(true)}
-            onShowMyEarnings={() => setShowMyEarnings(true)}
+            onShowMyListings={handleShowMyListings}
+            onShowMyEarnings={handleShowMyEarnings}
           />
         );
       case 'marketplace':
@@ -355,8 +366,8 @@ export default function App() {
             isConnected={isConnected}
             activeUsers={activeUsers}
             onLogout={logout}
-            onShowMyListings={() => setShowMyListings(true)}
-            onShowMyEarnings={() => setShowMyEarnings(true)}
+            onShowMyListings={handleShowMyListings}
+            onShowMyEarnings={handleShowMyEarnings}
           />
         );
       case 'transactions':
@@ -366,8 +377,8 @@ export default function App() {
             transactions={transactions}
             onNavigate={setCurrentPage}
             onLogout={logout}
-            onShowMyListings={() => setShowMyListings(true)}
-            onShowMyEarnings={() => setShowMyEarnings(true)}
+            onShowMyListings={handleShowMyListings}
+            onShowMyEarnings={handleShowMyEarnings}
           />
         );
       case 'wallet':
@@ -380,8 +391,8 @@ export default function App() {
             onWithdrawFunds={withdrawFunds}
             onNavigate={setCurrentPage}
             onLogout={logout}
-            onShowMyListings={() => setShowMyListings(true)}
-            onShowMyEarnings={() => setShowMyEarnings(true)}
+            onShowMyListings={handleShowMyListings}
+            onShowMyEarnings={handleShowMyEarnings}
           />
         );
       default:
@@ -391,18 +402,31 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${currentCompany ? `bg-gradient-to-br ${currentCompany.bgGradient}` : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
+      {/* Debug state display */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed top-0 right-0 bg-red-500 text-white p-2 z-50 text-xs">
+          MyListings: {showMyListings ? 'OPEN' : 'CLOSED'} | MyEarnings: {showMyEarnings ? 'OPEN' : 'CLOSED'}
+        </div>
+      )}
+      
       {renderPage()}
       
       {/* Side Panels */}
       <MyListings 
         isOpen={showMyListings}
-        onClose={() => setShowMyListings(false)}
+        onClose={() => {
+          console.log('Closing My Listings');
+          setShowMyListings(false);
+        }}
         company={currentCompany}
       />
       
       <MyEarnings 
         isOpen={showMyEarnings}
-        onClose={() => setShowMyEarnings(false)}
+        onClose={() => {
+          console.log('Closing My Earnings');
+          setShowMyEarnings(false);
+        }}
         company={currentCompany}
       />
     </div>
