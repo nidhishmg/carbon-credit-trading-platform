@@ -14,7 +14,7 @@ export const companies = {
     secondaryColor: '#3b82f6',
     bgGradient: 'from-blue-50 to-indigo-50',
     lastUpdate: '2024-12-12T14:30:00Z',
-    targetYear: 2030,
+    targetYear: 2025,
     beeData: {
       currentSEC: 6.85, // GJ/tonne crude steel (Specific Energy Consumption)
       targetSEC: 5.48, // BEE mandated target
@@ -131,7 +131,7 @@ export const companies = {
     secondaryColor: '#10b981',
     bgGradient: 'from-green-50 to-emerald-50',
     lastUpdate: '2024-12-12T15:45:00Z',
-    targetYear: 2030,
+    targetYear: 2025,
     beeData: {
       currentSEC: 3.28, // GJ/tonne cement (Specific Energy Consumption)
       targetSEC: 2.95, // BEE mandated target
@@ -250,7 +250,7 @@ export const companies = {
     secondaryColor: '#ef4444',
     bgGradient: 'from-red-50 to-orange-50',
     lastUpdate: '2024-12-12T16:20:00Z',
-    targetYear: 2030,
+    targetYear: 2025,
     beeData: {
       currentSEC: 28.5, // GJ/tonne crude oil processed (Specific Energy Consumption)
       targetSEC: 26.2, // BEE mandated target

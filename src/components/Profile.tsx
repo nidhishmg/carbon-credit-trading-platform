@@ -31,6 +31,7 @@ import {
   Coins
 } from 'lucide-react';
 import type { Company, Transaction } from '../App';
+import { useRealTime, formatRealTime, useLiveStatus } from '../utils/timeUtils';
 
 interface ProfileProps {
   company: Company | null;
@@ -49,35 +50,15 @@ export const Profile: React.FC<ProfileProps> = ({
   isConnected = false, 
   activeUsers = 0
 }) => {
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const currentTime = useRealTime();
+  const isLive = useLiveStatus();
   const [detailsOpen, setDetailsOpen] = useState(false);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   if (!company) return null;
 
   const reductionPercentage = ((company.emissions.baseline - company.emissions.current) / company.emissions.baseline) * 100;
   const targetProgress = ((company.emissions.baseline - company.emissions.current) / (company.emissions.baseline - company.emissions.target)) * 100;
-  const yearlyReduction = ((company.emissions.previousYear - company.emissions.current) / company.emissions.previousYear) * 100;
-
-  const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString('en-IN', {
-      timeZone: 'Asia/Kolkata',
-      hour12: true,
-      hour: '2-digit',
-      minute: '2-digit',
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
-  const getCurrentHourEmission = () => {
+  const yearlyReduction = ((company.emissions.previousYear - company.emissions.current) / company.emissions.previousYear) * 100;  const getCurrentHourEmission = () => {
     const currentHour = currentTime.getHours();
     const formattedHour = `${currentHour.toString().padStart(2, '0')}:00`;
     const hourData = company.hourlyEmissions.find(h => h.hour === formattedHour);
@@ -134,7 +115,13 @@ export const Profile: React.FC<ProfileProps> = ({
             </div>
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-gray-500" />
-              <span className="text-sm text-gray-600">Updated: {formatTime(company.lastUpdate)}</span>
+              <span className="text-sm text-gray-600">
+                Updated: {formatRealTime(currentTime)}
+                {isLive && <span className="ml-2 inline-flex items-center">
+                  <span className="animate-pulse w-2 h-2 bg-green-400 rounded-full mr-1"></span>
+                  <span className="text-green-600 text-xs">LIVE</span>
+                </span>}
+              </span>
             </div>
             <div className="flex items-center space-x-2">
               <Target className="h-4 w-4 text-gray-500" />
@@ -592,7 +579,7 @@ export const Profile: React.FC<ProfileProps> = ({
             <h2 className="text-gray-900">Sustainability Improvement Suggestions</h2>
             <div className="flex items-center space-x-2">
               <AlertCircle className="h-5 w-5 text-orange-500" />
-              <span className="text-sm text-orange-600">Action Required to Meet 2030 Targets</span>
+              <span className="text-sm text-orange-600">Action Required to Meet 2025 Targets</span>
             </div>
           </div>
 
