@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Login } from './components/Login';
 import { Profile } from './components/Profile';
 import { Marketplace } from './components/Marketplace';
+import { Earnings } from './components/Earnings';
 import { Transactions } from './components/Transactions';
 import { Wallet } from './components/Wallet';
 import { MyListings } from './components/MyListings';
@@ -111,17 +112,6 @@ export default function App() {
   const [showMyListings, setShowMyListings] = useState(false);
   const [showMyEarnings, setShowMyEarnings] = useState(false);
 
-  // Debug functions
-  const handleShowMyListings = () => {
-    console.log('My Listings clicked!');
-    setShowMyListings(true);
-  };
-
-  const handleShowMyEarnings = () => {
-    console.log('My Earnings clicked!');
-    setShowMyEarnings(true);
-  };
-
   // Real-time network integration
   const {
     isConnected,
@@ -131,7 +121,9 @@ export default function App() {
     broadcastTransaction,
     addMarketplaceListing,
     removeMarketplaceListing,
-    getMarketplaceListings
+    getMarketplaceListings,
+    getUserWallet,
+    processPurchaseTransaction
   } = useRealTimeNetwork(
     currentCompany,
     // On wallet update received
@@ -190,18 +182,42 @@ export default function App() {
     if (company && company.password === password) {
       setCurrentCompany(company);
       setTransactions(generateMockTransactions(beeId) as Transaction[]);
+      
+      // Load wallet balance from real-time network
+      const networkWalletBalance = getUserWallet(company.id);
+      console.log('Loading wallet balance from network:', networkWalletBalance, 'for company:', company.id);
+      setWalletBalance(networkWalletBalance);
+      
       setCurrentPage('profile');
       return true;
     }
     return false;
   };
 
-  // Buy credits function - now handles marketplace listings
+  // Buy credits function - now uses real-time transaction processing
   const buyCredits = (quantity: number, price: number, seller: string, listingId?: string) => {
     if (!currentCompany) return false;
     
     const total = quantity * price;
     if (walletBalance < total) return false;
+
+    console.log('Processing purchase transaction:', {
+      buyerId: currentCompany.id,
+      sellerId: seller,
+      amount: total,
+      quantity,
+      listingId
+    });
+
+    // Use the new real-time transaction processing system
+    if (listingId) {
+      const success = processPurchaseTransaction(currentCompany.id, seller, total, listingId);
+      if (!success) {
+        console.error('Failed to process purchase transaction');
+        return false;
+      }
+      console.log('Transaction processed successfully!');
+    }
 
     const newTransaction: Transaction = {
       id: `TXN${Date.now()}`,
@@ -231,15 +247,13 @@ export default function App() {
     };
     setCurrentCompany(updatedCompany);
 
-    // If this was from a marketplace listing, remove it
-    if (listingId) {
-      removeMarketplaceListing(listingId);
+    // For manual transactions or when not using marketplace listing
+    if (!listingId) {
+      // Broadcast updates to network manually
+      broadcastTransaction(newTransaction);
+      broadcastWalletUpdate(currentCompany.id, newWalletBalance);
+      updateCompanyCredits(currentCompany.id, newCreditBalance);
     }
-
-    // Broadcast updates to network
-    broadcastTransaction(newTransaction);
-    broadcastWalletUpdate(currentCompany.id, newWalletBalance);
-    updateCompanyCredits(currentCompany.id, newCreditBalance);
     
     return true;
   };
@@ -350,8 +364,6 @@ export default function App() {
             onLogout={logout}
             isConnected={isConnected}
             activeUsers={activeUsers}
-            onShowMyListings={handleShowMyListings}
-            onShowMyEarnings={handleShowMyEarnings}
           />
         );
       case 'marketplace':
@@ -366,8 +378,15 @@ export default function App() {
             isConnected={isConnected}
             activeUsers={activeUsers}
             onLogout={logout}
-            onShowMyListings={handleShowMyListings}
-            onShowMyEarnings={handleShowMyEarnings}
+          />
+        );
+      case 'earnings':
+        return (
+          <Earnings 
+            company={currentCompany}
+            walletBalance={walletBalance}
+            onNavigate={setCurrentPage}
+            onLogout={logout}
           />
         );
       case 'transactions':
@@ -377,8 +396,6 @@ export default function App() {
             transactions={transactions}
             onNavigate={setCurrentPage}
             onLogout={logout}
-            onShowMyListings={handleShowMyListings}
-            onShowMyEarnings={handleShowMyEarnings}
           />
         );
       case 'wallet':
@@ -391,8 +408,6 @@ export default function App() {
             onWithdrawFunds={withdrawFunds}
             onNavigate={setCurrentPage}
             onLogout={logout}
-            onShowMyListings={handleShowMyListings}
-            onShowMyEarnings={handleShowMyEarnings}
           />
         );
       default:
@@ -402,33 +417,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${currentCompany ? `bg-gradient-to-br ${currentCompany.bgGradient}` : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
-      {/* Debug state display */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed top-0 right-0 bg-red-500 text-white p-2 z-50 text-xs">
-          MyListings: {showMyListings ? 'OPEN' : 'CLOSED'} | MyEarnings: {showMyEarnings ? 'OPEN' : 'CLOSED'}
-        </div>
-      )}
-      
       {renderPage()}
-      
-      {/* Side Panels */}
-      <MyListings 
-        isOpen={showMyListings}
-        onClose={() => {
-          console.log('Closing My Listings');
-          setShowMyListings(false);
-        }}
-        company={currentCompany}
-      />
-      
-      <MyEarnings 
-        isOpen={showMyEarnings}
-        onClose={() => {
-          console.log('Closing My Earnings');
-          setShowMyEarnings(false);
-        }}
-        company={currentCompany}
-      />
     </div>
   );
 }

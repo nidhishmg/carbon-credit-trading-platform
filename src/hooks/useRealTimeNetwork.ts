@@ -11,6 +11,8 @@ interface UseRealTimeNetworkReturn {
   addMarketplaceListing: (listing: any) => any;
   removeMarketplaceListing: (listingId: string) => boolean;
   getMarketplaceListings: (excludeSellerId?: string) => any[];
+  getUserWallet: (userId: string) => number;
+  processPurchaseTransaction: (buyerId: string, sellerId: string, amount: number, listingId: string) => boolean;
   networkData: any;
 }
 
@@ -104,6 +106,14 @@ export const useRealTimeNetwork = (
     return network.getMarketplaceListings(excludeSellerId);
   }, [network]);
 
+  const getUserWallet = useCallback((userId: string) => {
+    return network.getUserWallet(userId);
+  }, [network]);
+
+  const processPurchaseTransaction = useCallback((buyerId: string, sellerId: string, amount: number, listingId: string) => {
+    return network.processPurchaseTransaction(buyerId, sellerId, amount, listingId);
+  }, [network]);
+
   return {
     isConnected,
     activeUsers,
@@ -113,6 +123,8 @@ export const useRealTimeNetwork = (
     addMarketplaceListing,
     removeMarketplaceListing,
     getMarketplaceListings,
+    getUserWallet,
+    processPurchaseTransaction,
     networkData
   };
 };

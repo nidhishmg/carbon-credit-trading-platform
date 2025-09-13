@@ -3,6 +3,7 @@ interface NetworkData {
   companies: Record<string, any>;
   marketplaceListings: MarketplaceListing[];
   globalTransactions: any[];
+  userWallets: Record<string, number>; // userId -> wallet balance
   lastUpdated: number;
   activeUsers: string[];
 }
@@ -62,6 +63,7 @@ class RealTimeNetwork {
         companies: {},
         marketplaceListings: [],
         globalTransactions: [],
+        userWallets: {},
         lastUpdated: Date.now(),
         activeUsers: []
       });
@@ -315,6 +317,73 @@ class RealTimeNetwork {
   getActiveUsersCount(): number {
     const data = this.getNetworkData();
     return data?.activeUsers.length || 0;
+  }
+
+  // Wallet transaction methods
+  getUserWallet(userId: string): number {
+    const data = this.getNetworkData();
+    return data?.userWallets[userId] || 2500000; // Default wallet balance
+  }
+
+  updateUserWallet(userId: string, balance: number) {
+    const data = this.getNetworkData();
+    if (data) {
+      data.userWallets[userId] = balance;
+      data.lastUpdated = Date.now();
+      this.setNetworkData(data);
+      
+      this.broadcast({
+        type: 'WALLET_UPDATE',
+        data: { userId, balance }
+      });
+    }
+  }
+
+  // Process a purchase transaction with wallet updates
+  processPurchaseTransaction(buyerId: string, sellerId: string, amount: number, listingId: string) {
+    const data = this.getNetworkData();
+    if (data) {
+      const buyerWallet = data.userWallets[buyerId] || 2500000;
+      const sellerWallet = data.userWallets[sellerId] || 2500000;
+      
+      // Check if buyer has sufficient funds
+      if (buyerWallet >= amount) {
+        // Deduct from buyer
+        data.userWallets[buyerId] = buyerWallet - amount;
+        // Add to seller
+        data.userWallets[sellerId] = sellerWallet + amount;
+        
+        // Mark listing as sold
+        const listingIndex = data.marketplaceListings.findIndex(l => l.id === listingId);
+        if (listingIndex >= 0) {
+          data.marketplaceListings[listingIndex].status = 'sold';
+        }
+        
+        // Add transaction to global list
+        const transaction = {
+          id: `TXN${Date.now()}`,
+          buyerId,
+          sellerId,
+          amount,
+          listingId,
+          timestamp: Date.now(),
+          type: 'purchase'
+        };
+        data.globalTransactions.push(transaction);
+        
+        data.lastUpdated = Date.now();
+        this.setNetworkData(data);
+        
+        // Broadcast the transaction
+        this.broadcast({
+          type: 'TRANSACTION',
+          data: transaction
+        });
+        
+        return true;
+      }
+    }
+    return false;
   }
 
   // Disconnect from network

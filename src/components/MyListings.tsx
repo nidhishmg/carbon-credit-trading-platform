@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from './ui/sheet';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Card, CardContent } from './ui/card';
@@ -98,19 +97,41 @@ export const MyListings: React.FC<MyListingsProps> = ({
     .reduce((sum, listing) => sum + listing.total, 0);
 
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle className="flex items-center space-x-2">
-            <ShoppingBag className="h-5 w-5" />
-            <span>My Listings</span>
-          </SheetTitle>
-          <SheetDescription>
-            Manage your carbon credit listings in the marketplace
-          </SheetDescription>
-        </SheetHeader>
+    <>
+      {/* Backdrop */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={onClose}
+        />
+      )}
+      
+      {/* Side Panel */}
+      <div 
+        className={`fixed right-0 top-0 h-full w-96 bg-white shadow-xl transform transition-transform duration-300 z-50 ${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-2">
+              <ShoppingBag className="h-5 w-5" />
+              <h2 className="text-lg font-semibold">My Listings</h2>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
 
-        <div className="mt-6 space-y-4">
+          <p className="text-sm text-gray-600 mb-6">
+            Manage your carbon credit listings in the marketplace
+          </p>
           {/* Summary Cards */}
           <div className="grid grid-cols-2 gap-3">
             <Card>
@@ -215,7 +236,7 @@ export const MyListings: React.FC<MyListingsProps> = ({
             )}
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </>
   );
 };
