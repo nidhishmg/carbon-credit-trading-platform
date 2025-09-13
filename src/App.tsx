@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Login } from './components/Login';
 import { Profile } from './components/Profile';
 import { Marketplace } from './components/Marketplace';
+import { Listings } from './components/Listings';
 import { Earnings } from './components/Earnings';
 import { Transactions } from './components/Transactions';
 import { Wallet } from './components/Wallet';
-import { MyListings } from './components/MyListings';
-import { MyEarnings } from './components/MyEarnings';
 import { companies, generateMockTransactions } from './data/companies';
 import { useRealTimeNetwork } from './hooks/useRealTimeNetwork';
 
@@ -109,8 +108,6 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [walletBalance, setWalletBalance] = useState(2500000); // Initial wallet balance in INR
   const [marketplaceTab, setMarketplaceTab] = useState<'buy' | 'sell'>('buy');
-  const [showMyListings, setShowMyListings] = useState(false);
-  const [showMyEarnings, setShowMyEarnings] = useState(false);
 
   // Real-time network integration
   const {
@@ -211,12 +208,45 @@ export default function App() {
 
     // Use the new real-time transaction processing system
     if (listingId) {
-      const success = processPurchaseTransaction(currentCompany.id, seller, total, listingId);
+      // process via backend if available
+      // Note: hook returns Promise<boolean>
+      const success = (processPurchaseTransaction as any)(currentCompany.id, seller, total, listingId) as Promise<boolean> | boolean;
+      if (success instanceof Promise) {
+        // Fire-and-forget optimistic add of user-visible txn after success
+        success.then((ok) => {
+          if (ok) {
+            const newTransaction: Transaction = {
+              id: `TXN${Date.now()}`,
+              type: 'buy',
+              quantity,
+              price,
+              total,
+              date: new Date().toISOString().split('T')[0],
+              counterparty: seller,
+              status: 'completed'
+            };
+            setTransactions(prev => [newTransaction, ...prev]);
+          }
+        });
+        return true;
+      }
       if (!success) {
         console.error('Failed to process purchase transaction');
         return false;
       }
-      console.log('Transaction processed successfully!');
+      // With sync return true, add user-visible txn
+      const newTransaction: Transaction = {
+        id: `TXN${Date.now()}`,
+        type: 'buy',
+        quantity,
+        price,
+        total,
+        date: new Date().toISOString().split('T')[0],
+        counterparty: seller,
+        status: 'completed'
+      };
+      setTransactions(prev => [newTransaction, ...prev]);
+      return true;
     }
 
     const newTransaction: Transaction = {
@@ -247,7 +277,7 @@ export default function App() {
     };
     setCurrentCompany(updatedCompany);
 
-    // For manual transactions or when not using marketplace listing
+    // For manual transactions (not using marketplace listing)
     if (!listingId) {
       // Broadcast updates to network manually
       broadcastTransaction(newTransaction);
@@ -377,6 +407,14 @@ export default function App() {
             defaultTab={marketplaceTab}
             isConnected={isConnected}
             activeUsers={activeUsers}
+            onLogout={logout}
+          />
+        );
+      case 'listings':
+        return (
+          <Listings 
+            company={currentCompany}
+            onNavigate={setCurrentPage}
             onLogout={logout}
           />
         );

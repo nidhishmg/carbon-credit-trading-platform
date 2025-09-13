@@ -12,7 +12,7 @@ interface UseRealTimeNetworkReturn {
   removeMarketplaceListing: (listingId: string) => boolean;
   getMarketplaceListings: (excludeSellerId?: string) => any[];
   getUserWallet: (userId: string) => number;
-  processPurchaseTransaction: (buyerId: string, sellerId: string, amount: number, listingId: string) => boolean;
+  processPurchaseTransaction: (buyerId: string, sellerId: string, amount: number, listingId: string) => Promise<boolean>;
   networkData: any;
 }
 
@@ -40,11 +40,13 @@ export const useRealTimeNetwork = (
     const unsubscribeUpdates = network.subscribeToUpdates((update) => {
       // Handle different types of updates
       switch (update.type) {
-        case 'WALLET_UPDATE':
-          if (update.data.companyId === currentCompany?.id && onWalletUpdate) {
+        case 'WALLET_UPDATE': {
+          const targetId = update.data.companyId ?? update.data.userId;
+          if (targetId === currentCompany?.id && onWalletUpdate) {
             onWalletUpdate(update.data.balance);
           }
           break;
+        }
           
         case 'CREDIT_UPDATE':
           if (update.data.companyId === currentCompany?.id && onCompanyUpdate) {
@@ -52,11 +54,14 @@ export const useRealTimeNetwork = (
           }
           break;
           
-        case 'TRANSACTION':
+        case 'TRANSACTION': {
+          // Ignore backend 'purchase' to avoid duplicate entries; local flows add user-facing transactions
+          if (update.data?.type === 'purchase') break;
           if (onTransactionUpdate) {
             onTransactionUpdate(update.data);
           }
           break;
+        }
           
         case 'MARKETPLACE_UPDATE':
           if (onMarketplaceUpdate) {
@@ -111,7 +116,7 @@ export const useRealTimeNetwork = (
   }, [network]);
 
   const processPurchaseTransaction = useCallback((buyerId: string, sellerId: string, amount: number, listingId: string) => {
-    return network.processPurchaseTransaction(buyerId, sellerId, amount, listingId);
+    return Promise.resolve(network.processPurchaseTransaction(buyerId, sellerId, amount, listingId));
   }, [network]);
 
   return {

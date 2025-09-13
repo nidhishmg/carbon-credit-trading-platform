@@ -31,8 +31,6 @@ interface MarketplaceProps {
   isConnected?: boolean;
   activeUsers?: number;
   onLogout?: () => void;
-  onShowMyListings?: () => void;
-  onShowMyEarnings?: () => void;
 }
 
 export const Marketplace: React.FC<MarketplaceProps> = ({ 
@@ -44,9 +42,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
   defaultTab = 'buy',
   isConnected = false,
   activeUsers = 0,
-  onLogout = () => {},
-  onShowMyListings,
-  onShowMyEarnings
+  onLogout = () => {}
 }) => {
   const [sellQuantity, setSellQuantity] = useState('');
   const [sellPrice, setSellPrice] = useState('25.50');
@@ -73,7 +69,8 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
   if (!company) return null;
 
   const handleBuyCredits = (listing: any) => {
-    const success = onBuyCredits(listing.quantity, listing.price, listing.seller, listing.id);
+    // seller should be sellerId for wallet processing
+    const success = onBuyCredits(listing.quantity, listing.price, listing.sellerId, listing.id);
     if (success) {
       setBuyMessage(`Successfully purchased ${listing.quantity.toLocaleString()} credits from ${listing.seller}`);
       setTimeout(() => setBuyMessage(''), 3000);
@@ -117,8 +114,6 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
         currentPage="marketplace" 
         onNavigate={onNavigate} 
         onLogout={onLogout}
-        onShowMyListings={onShowMyListings}
-        onShowMyEarnings={onShowMyEarnings}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

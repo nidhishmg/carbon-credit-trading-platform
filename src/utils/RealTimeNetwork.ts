@@ -38,9 +38,21 @@ class RealTimeNetwork {
   private userId: string;
   private pollInterval: NodeJS.Timeout | null = null;
   private heartbeatInterval: NodeJS.Timeout | null = null;
+  // Backend integration
+  private ws: WebSocket | null = null;
+  private backendUrl: string;
+  private wsUrl: string;
+  private backendEnabled = false;
+  private backendListings: MarketplaceListing[] = [];
+  private backendWallets: Record<string, number> = {};
 
   constructor() {
     this.userId = this.generateUserId();
+    // Resolve backend endpoints from env or localStorage
+    const envHttp = (import.meta as any)?.env?.VITE_BACKEND_URL as string | undefined;
+    const stored = (() => { try { return localStorage.getItem('carbonx_backend_url') || undefined; } catch { return undefined; } })();
+    this.backendUrl = (envHttp || stored || 'http://localhost:5178').replace(/\/$/, '');
+    this.wsUrl = this.backendUrl.replace('http://', 'ws://').replace('https://', 'wss://');
     this.initializeNetwork();
   }
 
@@ -72,11 +84,98 @@ class RealTimeNetwork {
     // Start polling for updates
     this.startPolling();
     this.startHeartbeat();
+    this.connectWebSocket();
 
     // Cleanup on page unload
     window.addEventListener('beforeunload', () => {
       this.disconnect();
     });
+  }
+
+  private connectWebSocket() {
+    try {
+      this.ws = new WebSocket(this.wsUrl);
+      this.ws.onopen = () => {
+        this.backendEnabled = true;
+      };
+      this.ws.onmessage = (evt) => {
+        try {
+          const msg = JSON.parse(evt.data as string);
+          switch (msg.type) {
+            case 'SNAPSHOT': {
+              const { listings, wallets, transactions } = msg.data || {};
+              this.backendListings = listings || [];
+              this.backendWallets = wallets || {};
+              // Seed local network data for UI binding
+              const data = this.getNetworkData();
+              if (data) {
+                data.marketplaceListings = this.backendListings as any;
+                data.userWallets = { ...data.userWallets, ...this.backendWallets };
+                data.globalTransactions = [
+                  ...(data.globalTransactions || []),
+                  ...((transactions || []) as any[])
+                ].slice(-100);
+                data.lastUpdated = Date.now();
+                this.setNetworkData(data);
+                this.subscribers.forEach(cb => cb(data));
+              }
+              break;
+            }
+            case 'MARKETPLACE_UPDATE': {
+              const { action, listing, listingId } = msg.data || {};
+              if (action === 'add' && listing) {
+                this.backendListings = [listing, ...this.backendListings];
+              }
+              if (action === 'remove' && listingId) {
+                this.backendListings = this.backendListings.map(l => l.id === listingId ? { ...l, status: 'sold' } : l);
+              }
+              // Reflect into local data and notify
+              const data = this.getNetworkData();
+              if (data) {
+                data.marketplaceListings = this.backendListings as any;
+                data.lastUpdated = Date.now();
+                this.setNetworkData(data);
+                this.broadcast({ type: 'MARKETPLACE_UPDATE', data: msg.data });
+              }
+              break;
+            }
+            case 'WALLET_UPDATE': {
+              const { userId, balance } = msg.data || {};
+              if (userId) this.backendWallets[userId] = balance;
+              const data = this.getNetworkData();
+              if (data) {
+                data.userWallets[userId] = balance;
+                data.lastUpdated = Date.now();
+                this.setNetworkData(data);
+                this.broadcast({ type: 'WALLET_UPDATE', data: { userId, balance } });
+              }
+              break;
+            }
+            case 'TRANSACTION': {
+              const txn = msg.data;
+              const data = this.getNetworkData();
+              if (data) {
+                data.globalTransactions.push(txn);
+                data.lastUpdated = Date.now();
+                this.setNetworkData(data);
+                this.broadcast({ type: 'TRANSACTION', data: txn });
+              }
+              break;
+            }
+          }
+        } catch {}
+      };
+      this.ws.onerror = () => {
+        this.backendEnabled = false;
+      };
+      this.ws.onclose = () => {
+        this.backendEnabled = false;
+        // Retry connection after delay
+        setTimeout(() => this.connectWebSocket(), 3000);
+      };
+    } catch {
+      this.backendEnabled = false;
+    }
   }
 
   private getNetworkData(): NetworkData | null {
@@ -218,10 +317,8 @@ class RealTimeNetwork {
 
   // Update wallet balance
   updateWallet(companyId: string, newBalance: number) {
-    this.broadcast({
-      type: 'WALLET_UPDATE',
-      data: { companyId, balance: newBalance }
-    });
+    // Keep local broadcast for UI
+    this.broadcast({ type: 'WALLET_UPDATE', data: { companyId, balance: newBalance } });
   }
 
   // Add transaction
@@ -241,6 +338,11 @@ class RealTimeNetwork {
 
   // Add marketplace listing
   addMarketplaceListing(listing: Omit<MarketplaceListing, 'id' | 'dateCreated' | 'status'>) {
+    if (this.backendEnabled) {
+      return this.httpPost(`${this.backendUrl}/listings`, listing)
+        .then((res) => res as MarketplaceListing)
+        .catch(() => null);
+    }
     const data = this.getNetworkData();
     if (data) {
       const newListing: MarketplaceListing = {
@@ -249,16 +351,10 @@ class RealTimeNetwork {
         dateCreated: new Date().toISOString(),
         status: 'active'
       };
-      
       data.marketplaceListings.push(newListing);
       data.lastUpdated = Date.now();
       this.setNetworkData(data);
-      
-      this.broadcast({
-        type: 'MARKETPLACE_UPDATE',
-        data: { action: 'add', listing: newListing }
-      });
-      
+      this.broadcast({ type: 'MARKETPLACE_UPDATE', data: { action: 'add', listing: newListing } });
       return newListing;
     }
     return null;
@@ -287,6 +383,10 @@ class RealTimeNetwork {
 
   // Get active marketplace listings excluding seller's own listings
   getMarketplaceListings(excludeSellerId?: string): MarketplaceListing[] {
+    if (this.backendEnabled) {
+      return this.backendListings
+        .filter(l => l.status === 'active' && (!excludeSellerId || l.sellerId !== excludeSellerId));
+    }
     const data = this.getNetworkData();
     if (data) {
       return data.marketplaceListings
@@ -321,6 +421,24 @@ class RealTimeNetwork {
 
   // Wallet transaction methods
   getUserWallet(userId: string): number {
+    if (this.backendEnabled) {
+      const cached = this.backendWallets[userId];
+      if (typeof cached === 'number') return cached;
+      // Fire and forget fetch to update cache
+      this.httpGet(`${this.backendUrl}/wallet/${encodeURIComponent(userId)}`).then((res: any) => {
+        if (res && typeof res.balance === 'number') {
+          this.backendWallets[userId] = res.balance;
+          const data = this.getNetworkData();
+          if (data) {
+            data.userWallets[userId] = res.balance;
+            data.lastUpdated = Date.now();
+            this.setNetworkData(data);
+            this.broadcast({ type: 'WALLET_UPDATE', data: { userId, balance: res.balance } });
+          }
+        }
+      }).catch(() => {});
+      return cached ?? 2500000;
+    }
     const data = this.getNetworkData();
     return data?.userWallets[userId] || 2500000; // Default wallet balance
   }
@@ -341,25 +459,22 @@ class RealTimeNetwork {
 
   // Process a purchase transaction with wallet updates
   processPurchaseTransaction(buyerId: string, sellerId: string, amount: number, listingId: string) {
+    if (this.backendEnabled) {
+      return this.httpPost(`${this.backendUrl}/purchase`, { buyerId, listingId })
+        .then(() => true)
+        .catch(() => false);
+    }
     const data = this.getNetworkData();
     if (data) {
       const buyerWallet = data.userWallets[buyerId] || 2500000;
       const sellerWallet = data.userWallets[sellerId] || 2500000;
-      
-      // Check if buyer has sufficient funds
       if (buyerWallet >= amount) {
-        // Deduct from buyer
         data.userWallets[buyerId] = buyerWallet - amount;
-        // Add to seller
         data.userWallets[sellerId] = sellerWallet + amount;
-        
-        // Mark listing as sold
         const listingIndex = data.marketplaceListings.findIndex(l => l.id === listingId);
         if (listingIndex >= 0) {
           data.marketplaceListings[listingIndex].status = 'sold';
         }
-        
-        // Add transaction to global list
         const transaction = {
           id: `TXN${Date.now()}`,
           buyerId,
@@ -370,20 +485,29 @@ class RealTimeNetwork {
           type: 'purchase'
         };
         data.globalTransactions.push(transaction);
-        
         data.lastUpdated = Date.now();
         this.setNetworkData(data);
-        
-        // Broadcast the transaction
-        this.broadcast({
-          type: 'TRANSACTION',
-          data: transaction
-        });
-        
+        this.broadcast({ type: 'TRANSACTION', data: transaction });
         return true;
       }
     }
     return false;
+  }
+
+  private async httpGet(url: string) {
+    const res = await fetch(url, { credentials: 'omit' });
+    if (!res.ok) throw new Error('HTTP error');
+    return res.json();
+  }
+
+  private async httpPost(url: string, body: any) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('HTTP error');
+    return res.json();
   }
 
   // Disconnect from network
@@ -394,6 +518,7 @@ class RealTimeNetwork {
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
     }
+    try { this.ws?.close(); } catch {}
     
     // Remove this user from active users
     const data = this.getNetworkData();

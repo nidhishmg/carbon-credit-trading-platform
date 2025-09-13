@@ -37,13 +37,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   company, 
   currentPage, 
   onNavigate, 
-  onLogout 
+  onLogout
 }) => {
   if (!company) return null;
 
   const navItems = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'marketplace', label: 'Marketplace', icon: BarChart3 },
+    { id: 'listings', label: 'My Listings', icon: ShoppingBag },
     { id: 'earnings', label: 'My Earnings', icon: TrendingUp },
     { id: 'transactions', label: 'Transactions', icon: History },
     { id: 'wallet', label: 'Wallet', icon: CreditCard }
