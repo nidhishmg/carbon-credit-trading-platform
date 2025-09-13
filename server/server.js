@@ -75,6 +75,8 @@ app.post('/purchase', (req, res) => {
   broadcast('WALLET_UPDATE', { userId: buyerId, balance: state.wallets[buyerId] });
   broadcast('WALLET_UPDATE', { userId: listing.sellerId, balance: state.wallets[listing.sellerId] });
   broadcast('MARKETPLACE_UPDATE', { action: 'remove', listingId });
+  // Inform clients to adjust credits for seller and optionally buyer
+  broadcast('SALE_COMPLETED', { listing, buyerId });
   res.json({ ok: true, txn, buyerBalance: state.wallets[buyerId], sellerBalance: state.wallets[listing.sellerId] });
 });
 

@@ -25,7 +25,7 @@ interface MarketplaceListing {
 }
 
 interface NetworkUpdate {
-  type: 'TRANSACTION' | 'WALLET_UPDATE' | 'CREDIT_UPDATE' | 'MARKETPLACE_UPDATE' | 'USER_JOIN' | 'USER_LEAVE';
+  type: 'TRANSACTION' | 'WALLET_UPDATE' | 'CREDIT_UPDATE' | 'MARKETPLACE_UPDATE' | 'USER_JOIN' | 'USER_LEAVE' | 'SALE_COMPLETED';
   data: any;
   timestamp: number;
   userId: string;
@@ -159,6 +159,33 @@ class RealTimeNetwork {
                 data.lastUpdated = Date.now();
                 this.setNetworkData(data);
                 this.broadcast({ type: 'TRANSACTION', data: txn });
+              }
+              break;
+            }
+            case 'SALE_COMPLETED': {
+              const { listing, buyerId } = msg.data || {};
+              const data = this.getNetworkData();
+              if (data && listing) {
+                // Reduce seller credits locally (buyer credit add is handled in App after success)
+                const sellerId = listing.sellerId;
+                const sellerCompany = data.companies[sellerId];
+                if (sellerCompany?.credits) {
+                  const newBal = Math.max(0, (sellerCompany.credits.balance || 0) - (listing.quantity || 0));
+                  data.companies[sellerId] = {
+                    ...sellerCompany,
+                    credits: {
+                      ...sellerCompany.credits,
+                      balance: newBal,
+                      sold: (sellerCompany.credits.sold || 0) + (listing.quantity || 0),
+                      value: newBal * 25.5,
+                    }
+                  };
+                }
+                data.lastUpdated = Date.now();
+                this.setNetworkData(data);
+                this.broadcast({ type: 'CREDIT_UPDATE', data: { companyId: sellerId, companyData: data.companies[sellerId] } });
+                // Also broadcast the sale event so UI can synthesize user-facing buy/sell transactions
+                this.broadcast({ type: 'SALE_COMPLETED', data: { listing, buyerId } });
               }
               break;
             }

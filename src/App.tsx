@@ -207,45 +207,20 @@ export default function App() {
     });
 
     // Use the new real-time transaction processing system
-    if (listingId) {
+  if (listingId) {
       // process via backend if available
       // Note: hook returns Promise<boolean>
       const success = (processPurchaseTransaction as any)(currentCompany.id, seller, total, listingId) as Promise<boolean> | boolean;
       if (success instanceof Promise) {
-        // Fire-and-forget optimistic add of user-visible txn after success
-        success.then((ok) => {
-          if (ok) {
-            const newTransaction: Transaction = {
-              id: `TXN${Date.now()}`,
-              type: 'buy',
-              quantity,
-              price,
-              total,
-              date: new Date().toISOString().split('T')[0],
-              counterparty: seller,
-              status: 'completed'
-            };
-            setTransactions(prev => [newTransaction, ...prev]);
-          }
-        });
+        // Backend will broadcast WALLET_UPDATE and SALE_COMPLETED; hook will update credits and transactions
+        success.then(() => {});
         return true;
       }
       if (!success) {
         console.error('Failed to process purchase transaction');
         return false;
       }
-      // With sync return true, add user-visible txn
-      const newTransaction: Transaction = {
-        id: `TXN${Date.now()}`,
-        type: 'buy',
-        quantity,
-        price,
-        total,
-        date: new Date().toISOString().split('T')[0],
-        counterparty: seller,
-        status: 'completed'
-      };
-      setTransactions(prev => [newTransaction, ...prev]);
+      // With sync return true, rely on broadcasts as above
       return true;
     }
 

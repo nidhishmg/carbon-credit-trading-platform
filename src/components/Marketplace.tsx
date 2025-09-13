@@ -20,6 +20,7 @@ import {
 import { marketplaceListings } from '../data/companies';
 import { useRealTimeNetwork } from '../hooks/useRealTimeNetwork';
 import type { Company } from '../App';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 
 interface MarketplaceProps {
   company: Company | null;
@@ -49,29 +50,51 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
   const [buyMessage, setBuyMessage] = useState('');
   const [sellMessage, setSellMessage] = useState('');
   const [dynamicListings, setDynamicListings] = useState<any[]>([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedListing, setSelectedListing] = useState<any | null>(null);
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [processing, setProcessing] = useState(false);
 
   // Get real-time network data
-  const { getMarketplaceListings } = useRealTimeNetwork(company);
+  const { getMarketplaceListings, networkData } = useRealTimeNetwork(company);
 
   // Load listings excluding user's own listings
   useEffect(() => {
     if (!company) return;
-    
+
     const listings = getMarketplaceListings(company.id);
     // Combine static listings with dynamic ones, excluding own listings
-    const staticListings = marketplaceListings.filter(listing => 
+    const staticListings = marketplaceListings.filter(listing =>
       listing.seller !== company.name
     );
     const allListings = [...staticListings, ...listings];
     setDynamicListings(allListings);
-  }, [company?.id, company?.name, getMarketplaceListings]);
+  }, [company?.id, company?.name, getMarketplaceListings, networkData?.lastUpdated]);
 
   if (!company) return null;
 
-  const handleBuyCredits = (listing: any) => {
+  const beginBuy = (listing: any) => {
+    setSelectedListing(listing);
+    setPassword('');
+    setPasswordError('');
+    setConfirmOpen(true);
+  };
+
+  const confirmAndBuy = async () => {
+    if (!selectedListing || !company) return;
+    if (password !== company.password) {
+      setPasswordError('Incorrect password. Please try again.');
+      return;
+    }
+    setProcessing(true);
+    setPasswordError('');
+    // Proceed with existing buy handler
+    const listing = selectedListing;
     // seller should be sellerId for wallet processing
-    const success = onBuyCredits(listing.quantity, listing.price, listing.sellerId, listing.id);
-    if (success) {
+    const result = onBuyCredits(listing.quantity, listing.price, listing.sellerId, listing.id) as any;
+    const ok = typeof result?.then === 'function' ? await result : !!result;
+    if (ok) {
       setBuyMessage(`Successfully purchased ${listing.quantity.toLocaleString()} credits from ${listing.seller}`);
       setTimeout(() => setBuyMessage(''), 3000);
       
@@ -81,10 +104,13 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
         const staticListings = marketplaceListings.filter(l => l.seller !== company.name);
         setDynamicListings([...staticListings, ...updatedListings]);
       }
+      setConfirmOpen(false);
+      setSelectedListing(null);
     } else {
       setBuyMessage('Insufficient wallet balance. Please add funds to continue.');
       setTimeout(() => setBuyMessage(''), 3000);
     }
+    setProcessing(false);
   };
 
   const handleSellCredits = () => {
@@ -167,7 +193,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
               <CardTitle className="text-sm text-orange-600">Available Listings</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl text-orange-800">{marketplaceListings.length}</div>
+              <div className="text-2xl text-orange-800">{dynamicListings.length}</div>
               <p className="text-xs text-gray-600">active offers</p>
             </CardContent>
           </Card>
@@ -264,7 +290,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
                         
                         <div className="ml-6 text-right">
                           <Button
-                            onClick={() => handleBuyCredits(listing)}
+                            onClick={() => beginBuy(listing)}
                             className="bg-green-600 hover:bg-green-700"
                             disabled={walletBalance < listing.total}
                           >
@@ -396,6 +422,39 @@ export const Marketplace: React.FC<MarketplaceProps> = ({
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Buy confirmation dialog */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Purchase</DialogTitle>
+          </DialogHeader>
+          {selectedListing && (
+            <div className="space-y-4">
+              <div className="text-sm text-gray-700">
+                You are about to buy <span className="font-medium">{selectedListing.quantity.toLocaleString()} credits</span> from <span className="font-medium">{selectedListing.seller}</span> for a total of <span className="font-medium">₹{selectedListing.total.toLocaleString()}</span>.
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-gray-700">Enter your password to confirm</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter account password"
+                />
+                {passwordError && <p className="text-xs text-red-600">{passwordError}</p>}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={processing}>Cancel</Button>
+            <Button onClick={confirmAndBuy} className="bg-green-600 hover:bg-green-700" disabled={processing}>
+              {processing ? 'Processing…' : 'Confirm Purchase'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

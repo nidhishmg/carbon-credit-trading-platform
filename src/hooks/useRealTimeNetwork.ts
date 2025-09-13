@@ -55,11 +55,72 @@ export const useRealTimeNetwork = (
           break;
           
         case 'TRANSACTION': {
-          // Ignore backend 'purchase' to avoid duplicate entries; local flows add user-facing transactions
+          // Ignore backend 'purchase' here; we synthesize user-facing 'buy'/'sell' on SALE_COMPLETED
           if (update.data?.type === 'purchase') break;
           if (onTransactionUpdate) {
             onTransactionUpdate(update.data);
           }
+          break;
+        }
+
+        case 'SALE_COMPLETED': {
+          const { listing, buyerId } = update.data || {};
+          if (!listing) break;
+
+          // For seller: reduce credits and add a 'sell' transaction
+          if (currentCompany && currentCompany.id === listing.sellerId) {
+            const curr = currentCompany;
+            const newCredits = Math.max(0, (curr.credits.balance || 0) - (listing.quantity || 0));
+            const updatedCompany = {
+              ...curr,
+              credits: {
+                ...curr.credits,
+                balance: newCredits,
+                sold: (curr.credits.sold || 0) + (listing.quantity || 0),
+                value: newCredits * 25.5,
+              },
+            } as Company;
+            onCompanyUpdate?.(updatedCompany);
+
+            onTransactionUpdate?.({
+              id: `TXN${Date.now()}`,
+              type: 'sell',
+              quantity: listing.quantity,
+              price: listing.price,
+              total: listing.total,
+              date: new Date().toISOString().split('T')[0],
+              counterparty: buyerId,
+              status: 'completed',
+            });
+          }
+
+          // For buyer: increase credits and add a 'buy' transaction
+          if (currentCompany && currentCompany.id === buyerId) {
+            const curr = currentCompany;
+            const newCredits = (curr.credits.balance || 0) + (listing.quantity || 0);
+            const updatedCompany = {
+              ...curr,
+              credits: {
+                ...curr.credits,
+                balance: newCredits,
+                purchased: (curr.credits.purchased || 0) + (listing.quantity || 0),
+                value: newCredits * 25.5,
+              },
+            } as Company;
+            onCompanyUpdate?.(updatedCompany);
+
+            onTransactionUpdate?.({
+              id: `TXN${Date.now()}`,
+              type: 'buy',
+              quantity: listing.quantity,
+              price: listing.price,
+              total: listing.total,
+              date: new Date().toISOString().split('T')[0],
+              counterparty: listing.sellerId,
+              status: 'completed',
+            });
+          }
+
           break;
         }
           
