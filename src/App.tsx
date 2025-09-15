@@ -6,6 +6,7 @@ import { Listings } from './components/Listings';
 import { Earnings } from './components/Earnings';
 import { Transactions } from './components/Transactions';
 import { Wallet } from './components/Wallet';
+import { Chatbot } from './components/Chatbot';
 import { companies, generateMockTransactions } from './data/companies';
 import { useRealTimeNetwork } from './hooks/useRealTimeNetwork';
 
@@ -431,6 +432,19 @@ export default function App() {
   return (
     <div className={`min-h-screen ${currentCompany ? `bg-gradient-to-br ${currentCompany.bgGradient}` : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
       {renderPage()}
+      {currentCompany && (
+        <>
+          {console.log('=== APP CHATBOT RENDER ===', {
+            currentCompany: currentCompany?.name,
+            currentPage,
+            companiesCount: Object.values(companies).length
+          })}
+          <Chatbot 
+            company={currentCompany} 
+            allCompanies={Object.values(companies)} 
+          />
+        </>
+      )}
     </div>
   );
 }

@@ -573,10 +573,10 @@ export const Profile: React.FC<ProfileProps> = ({
           </Card>
         </div>
 
-        {/* Sustainability Improvement Suggestions */}
+        {/* AI Sustainability Improvement Suggestions */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-gray-900">Sustainability Improvement Suggestions</h2>
+            <h2 className="text-gray-900">AI Sustainability Improvement Suggestions</h2>
             <div className="flex items-center space-x-2">
               <AlertCircle className="h-5 w-5 text-orange-500" />
               <span className="text-sm text-orange-600">Action Required to Meet 2025 Targets</span>
